@@ -7,11 +7,30 @@ namespace SocketWard
 {
     public class Ward
     {
+        private const int MaxBufferSize = 8196;
         private readonly Socket _client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        public Action<byte[]> Received { get; set; }
 
         public async Task Open(EndPoint ep)
         {
-            await _client.ConnectTaskAsync(ep);
+            await _client.ConnectAsync(ep);
+            //await _client.ConnectTaskAsync(ep);
+        }
+
+        public async Task<int> Write(byte[] data)
+        {
+            return await _client.SendAsync(new ArraySegment<byte>(data), SocketFlags.None);
+        }
+
+        public async Task StartReading()
+        {
+            var buffer = new byte[MaxBufferSize];
+            int bytesRead;
+            do
+            {
+                bytesRead = await _client.ReceiveAsync(new ArraySegment<byte>(buffer), SocketFlags.None);
+                Received(buffer);
+            } while (bytesRead != 0);
         }
     }
 
